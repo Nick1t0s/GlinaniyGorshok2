@@ -72,15 +72,18 @@ def update_plot(frame):
     lineU2.set_data(range(len(data_buffer)), [x.get("U2") for x in data_buffer])
 
 
-    # coff.set_name(f"Коэфицент пульсации: {data_buffer[-1].get("rippCoef")}%")
-    # I.set_name(f"I: {data_buffer[-1].get("I")}А")
-    # U.set_name(f"U: {data_buffer[-1].get("U2")}В")
-    # P.set_name(f"P: {data_buffer[-1].get("P")}Вт")
+    coff.update(s=f"Коэфицент пульсации: {data_buffer[-1].get("rippCoef")}%")
+    I.update(s=f"I: {data_buffer[-1].get("I")}А")
+    U.update(s=f"U: {data_buffer[-1].get("U2")}В")
+    P.update(s=f"P: {data_buffer[-1].get("P")}Вт")
+    fr.update(s=f"P: {data_buffer[-1].get("freq1")}Вт")
+    am.update(s=f"P: {data_buffer[-1].get("amp1")}Вт")
     # return line
 
 
 fig, (ax1, ax2) = plt.subplots(2)
 
+fig.set_size_inches(12, 5)
 
 lineU1, = ax1.plot([0,1], [0,5])
 
@@ -88,12 +91,13 @@ lineU1, = ax1.plot([0,1], [0,5])
 
 lineU2, = ax2.plot([0,1], [1, 2])
 
-coff = plt.text(0.2, 0.2, f"Коэфицент пульсации: {1}%")
+coff = plt.figtext(0.005, 0.0, f"Коэфицент пульсации: {1}%")
 
-I = plt.text(0.0, 5, f"I: {1} A")
-U = plt.text(0.0, 2.5, f"U: {1} В")
-P = plt.text(0.0, 0, f"P: {1} Вт")
-
+I = plt.figtext(0.005, 0.1, f"I: {1} A")
+U = plt.figtext(0.005, 0.2, f"U: {1} В")
+P = plt.figtext(0.005, 0.3, f"P: {1} Вт")
+fr = plt.figtext(0.005, 0.4, f"Freq: {1} Hz")
+am = plt.figtext(0.005, 0.5, f"Amp: {1} В")
 
 serial_thread = threading.Thread(target=serial_reader)
 serial_thread.start()
