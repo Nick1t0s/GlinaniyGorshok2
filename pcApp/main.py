@@ -30,31 +30,32 @@ def serial_reader():
                 line = ser.readline().decode('utf-8').strip()
                 if line:
                     try:
-                        data = json.loads(line)
-                        # U1 - int
-                        # U2 - int
-                        # freq1 - int
-                        # freq2 - int
-                        # amp1 - int
-                        # amp2 - int
+                        dt = line.split(",")
+                        data = {}
 
-                        mx = max(data, key = lambda x: x.get("U2")).get("U2")
-                        mn = min(data, key = lambda x: x.get("U2")).get("U2")
-                        sm = sum([x.get("U2") for x in data_buffer])
-                        cnt = len(data)
+                        # Парсим данные
+                        data["diode"] = dt[2]
+                        data["filter"] = dt[1]
+                        data["summator"] = dt[0]
 
-                        mid = sm/cnt
+                        # Для анализа готового сигнала
+                        mx = max(data, key = lambda x: x.get("diode")).get("diode") # Максимально напряжение
+                        mn = min(data, key = lambda x: x.get("diode")).get("diode") # Миниальное напряжение
+                        sm = sum([x.get("U2") for x in data_buffer]) # Суммарное напряжение
+                        cnt = len(data) # Кол-во значений
 
-                        data["rippCoef"] = ((mx-mn)/mid)*100
-                        data["I"] = data.get("U2")/R
-                        data["P"] = data.get("U2")*data.get("I")
-                        data_buffer.append(data)
+                        mid = sm/cnt # Ср арифметическое
+
+                        data["rippCoef"] = ((mx-mn)/mid)*100 # коэфицент польсации
+                        data["I"] = data.get("diode")/R # Вычисление тока по сопротивлению нагрузки
+                        data["P"] = data.get("diode")*data.get("I") # Высисление мощности по току
+                        data_buffer.append(data) # Добавляем в буффер данные
 
 
                     except Exception as e:
                         print(f"Wrong: {line}, \n Eer: e")
-            except UnicodeDecodeError:
-                print(UnicodeDecodeError)
+            except UnicodeDecodeError as e:
+                print(e)
 
         ser.close()
         print("Close")
@@ -68,16 +69,36 @@ def update_plot(frame):
 
     print(data_buffer)
 
-    lineU1.set_data(range(len(data_buffer)), [x.get("U1") for x in data_buffer])
-    lineU2.set_data(range(len(data_buffer)), [x.get("U2") for x in data_buffer])
+    lineSum.set_data(range(len(data_buffer)), [x.get("summator") for x in data_buffer])
+    lineFilter.set_data(range(len(data_buffer)), [x.get("filter") for x in data_buffer])
+    lineDiod.set_data(range(len(data_buffer)), [x.get("diode") for x in data_buffer])
+    try:
+        midI = 0
+        for i in data_buffer: midI+=i.get("I")
+        midI /= len(data_buffer)
+    except:
+        midI = "Нет данных"
 
+    try:
+        midU = 0
+        for i in data_buffer: midU+=i.get("U")
+        midU /= len(data_buffer)
+    except:
+        midU = "Нет данных"
 
-    coff.update(s=f"Коэфицент пульсации: {data_buffer[-1].get("rippCoef")}%")
-    I.update(s=f"I: {data_buffer[-1].get("I")}А")
-    U.update(s=f"U: {data_buffer[-1].get("U2")}В")
-    P.update(s=f"P: {data_buffer[-1].get("P")}Вт")
-    fr.update(s=f"P: {data_buffer[-1].get("freq1")}Вт")
-    am.update(s=f"P: {data_buffer[-1].get("amp1")}Вт")
+    try:
+        midP = 0
+        for i in data_buffer: midP+=i.get("U")
+        midP /= len(data_buffer)
+    except:
+        midU = "Нет данных"
+
+    coff.set_text(s=f"Коэфицент пульсации: {data_buffer[-1].get("rippCoef")}%")
+    I.set_text(s=f"I: {midI}А")
+    U.set_text(s=f"U: {midU}В")
+    P.set_text(s=f"P: {midP}Вт")
+    # fr.set_text(s=f"P: {data_buffer[-1].get("freq1")}Вт")
+    # am.set_text(s=f"P: {data_buffer[-1].get("amp1")}Вт")
     # return line
 
 
@@ -85,25 +106,24 @@ fig, (ax1, ax2) = plt.subplots(2)
 
 fig.set_size_inches(12, 5)
 
-lineU1, = ax1.plot([0,1], [0,5])
-
-
-
-lineU2, = ax2.plot([0,1], [1, 2])
+lineSum, = ax1.plot([0,1], [0,5], label = "Сумматор")
+lineFilter, = ax1.plot([0,1], [0,4], label = "Фильтр")
+ax1.legend(loc=0)
+lineDiod, = ax2.plot([0,1], [1, 2], label = "Выпрямление")
+ax2.legend(loc=0)
 
 coff = plt.figtext(0.005, 0.0, f"Коэфицент пульсации: {1}%")
 
 I = plt.figtext(0.005, 0.1, f"I: {1} A")
 U = plt.figtext(0.005, 0.2, f"U: {1} В")
 P = plt.figtext(0.005, 0.3, f"P: {1} Вт")
-fr = plt.figtext(0.005, 0.4, f"Freq: {1} Hz")
-am = plt.figtext(0.005, 0.5, f"Amp: {1} В")
-
+# fr = plt.figtext(0.005, 0.4, f"Freq: {1} Hz")
+# am = plt.figtext(0.005, 0.5, f"Amp: {1} В")
 serial_thread = threading.Thread(target=serial_reader)
 serial_thread.start()
 
 
-ani = FuncAnimation(fig, update_plot, interval=1)
+# ani = FuncAnimation(fig, update_plot, interval=1)
 
 plt.show()
 

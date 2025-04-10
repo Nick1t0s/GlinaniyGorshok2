@@ -1,30 +1,46 @@
-int dataPin = 5;    // к выводу 14 регистра SD
-int clockPin = 6;  // к выводу 11 регистра (SH_CP)
-int latchPin = 7;  // к выводу 12 регистра (ST_CP)
+int dataPin = 0;    // к выводу 14 регистра SD
+int clockPin = 1;  // к выводу 11 регистра (SH_CP)
+int latchPin = 2;  // к выводу 12 регистра (ST_CP)
 int i = 0;
-byte sine_table[32] = {0b11100000, 0b10000000, 0b10100000, 0b10110000, 0b11000000, 0b11010000, 0b11100000, 0b11100000, 0b11110000, 0b11100000, 0b11100000, 0b11010000, 0b11000000, 0b10110000, 0b10100000, 
-0b10000000, 0b11100000, 0b11000000, 0b10000000, 0b11000000, 0b10000000, 0b10000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b10000000, 0b10000000, 0b11000000, 0b10000000, 0b11000000};
-
+int sine_table[16][4] = {{1, 0, 0, 1}, {1, 0, 1, 1}, {1, 1, 0, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 0}, {1, 1, 0, 0}, {1, 0, 0, 1}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 1}, {0, 0, 1, 1}, {0, 1, 1, 0}};
 void setup() {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
-  digitalWrite(latchPin, LOW);
+  PORTB &= ~(1 << PB2);
 }
 
 void loop() {
-  if (i < 32){
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, LSBFIRST, sine_table[i]);
-    digitalWrite(latchPin, HIGH);
-    delayMicroseconds(21);
-    i += 1;
+  if (i < 16){
+    PORTB &= ~(1 << PB2);
+    for (int j=0;j<4; j++){
+      if (sine_table[i][j] == 1){
+        PORTB |= (1 << PB0);
+      }
+      else{
+        PORTB &= ~(1 << PB0);
+      }
+      PORTB |= (1 << PB1);
+      PORTB &= ~(1 << PB1);
+    }
+    delayMicroseconds(31);
+    PORTB |= (1 << PB2);
+    i ++;
   }
   else{
     i = 0;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, LSBFIRST, sine_table[i]);
-    digitalWrite(latchPin, HIGH);
-    delayMicroseconds(21);
+    PORTB &= ~(1 << PB2);
+    for (int j=0;j<4; j++){
+      if (sine_table[i][j] == 1){
+        PORTB |= (1 << PB0);
+      }
+      else{
+        PORTB &= ~(1 << PB0);
+      }
+      PORTB |= (1 << PB1);
+      PORTB &= ~(1 << PB1);
+    }
+    delayMicroseconds(31);
+    PORTB |= (1 << PB2);
   }
 }
